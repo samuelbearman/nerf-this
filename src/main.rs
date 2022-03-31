@@ -1,7 +1,14 @@
+use clap::Parser;
+
 mod search;
+mod cli;
 
 #[tokio::main]
 async fn main() -> octocrab::Result<()> {
-    search::issues::fetch("test".to_string()).await?;
+    let args = cli::Args::parse();
+
+    search::issues::query_issues(args.url).await?;
+    
     Ok(())
+    
 }
