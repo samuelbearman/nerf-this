@@ -1,6 +1,6 @@
 use clap::Parser;
 
-mod search;
+mod query;
 mod cli;
 mod output;
 
@@ -8,8 +8,11 @@ mod output;
 async fn main() -> octocrab::Result<()> {
     let args = cli::Args::parse();
 
-    search::issues::query_issues(args.url, args.fetch_count).await?;
-    
+    match args.action {
+        cli::Action::Issues { url } => query::issues::query_issues(url, args.fetch_count).await?,
+        cli::Action::GlobalSearch => query::global::search().await?,
+    }
+        
     Ok(())
     
 }
