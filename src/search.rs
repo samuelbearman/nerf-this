@@ -1,8 +1,26 @@
+pub const DEFAULT_KEY_WORDS: [&str; 14] = [
+    "cve",
+    "security",
+    "vulnerability",
+    "log4j",
+    "nist",
+    "poc",
+    "rce",
+    "attack",
+    "dos",
+    "hack",
+    "owasp",
+    "sniff",
+    "risk",
+    "threat",
+];
+
 pub mod issues {
 
-    use comfy_table::modifiers::UTF8_ROUND_CORNERS;
-    use comfy_table::presets::UTF8_FULL;
-    use comfy_table::*;
+    use crate::output::issues::print_issues;
+    use crate::search::DEFAULT_KEY_WORDS;
+    use colored::Colorize;
+    use indicatif::ProgressBar;
     use octocrab::models::issues::Issue;
     use octocrab::{models, params};
     use std::env;
@@ -12,12 +30,10 @@ pub mod issues {
         repo: String,
     }
 
-    const KEY_WORDS: [&str; 6] = ["cve", "security", "vulnerability", "log4j", "nist", "poc"];
-
-    pub async fn query_issues(repo_url: String) -> octocrab::Result<()> {
+    pub async fn query_issues(repo_url: String, fetch_count: u32) -> octocrab::Result<()> {
         let github_token = match env::var_os("GITHUB") {
             Some(v) => v.into_string().unwrap(),
-            None => panic!("$GITHUB is not set")
+            None => panic!("$GITHUB is not set"),
         };
 
         let query = parse_github_url(repo_url);
@@ -25,6 +41,9 @@ pub mod issues {
         let octocrab = octocrab::OctocrabBuilder::new()
             .personal_token(github_token)
             .build()?;
+        println!("{}", "Running Issues search".bright_red().bold());
+
+        let bar = ProgressBar::new(fetch_count.into());
         let mut page = octocrab
             .issues(query.owner, query.repo)
             .list()
@@ -33,50 +52,31 @@ pub mod issues {
             .send()
             .await?;
         let mut matched = Vec::new();
-        loop {
+        let mut current_count = 1;
+        while current_count <= fetch_count {
             for issue in &page {
                 if search_for_terms(issue) {
                     matched.push(issue.clone());
                 }
             }
 
+            current_count = current_count + 1;
+            bar.inc(1);
             page = match octocrab
                 .get_page::<models::issues::Issue>(&page.next)
                 .await?
             {
                 Some(next_page) => next_page,
                 None => break,
-            }
+            };
         }
-        print_search_results(matched);
+        bar.finish();
+        print_issues(matched);
         Ok(())
     }
 
-    fn print_search_results(results: Vec<Issue>) {
-        let mut table = Table::new();
-
-        for matched_issue in results {
-            table
-                .load_preset(UTF8_FULL)
-                .apply_modifier(UTF8_ROUND_CORNERS)
-                .set_content_arrangement(ContentArrangement::Dynamic)
-                .set_header(vec!["Title", "Url", "State"])
-                .add_row(vec![
-                    Cell::new(matched_issue.title).fg(Color::Red),
-                    Cell::new(matched_issue.html_url.as_str()),
-                    match matched_issue.state.as_ref() {
-                        "open" => Cell::new(matched_issue.state).fg(Color::Green),
-                        "closed" => Cell::new(matched_issue.state).fg(Color::Red),
-                        _ => Cell::new("N/A").fg(Color::Yellow),
-                    },
-                ]);
-        }
-
-        println!("{table}");
-    }
-
     fn search_for_terms(issue: &Issue) -> bool {
-        for word in KEY_WORDS {
+        for word in DEFAULT_KEY_WORDS {
             if issue.title.to_lowercase().contains(word) {
                 return true;
             }
