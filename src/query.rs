@@ -55,24 +55,29 @@ pub mod global {
 
 pub mod issues {
 
+    use crate::extensions::octocrab::{OrganisationExt, UsersExt};
     use crate::output::issues::print_issues;
     use crate::query::util::get_client;
     use crate::query::DEFAULT_KEY_WORDS;
     use colored::Colorize;
     use indicatif::ProgressBar;
     use octocrab::models::issues::Issue;
-    use octocrab::Octocrab;
-    use octocrab::{models, params};
+    use octocrab::{models, params, Octocrab};
+    use url::Url;
 
     struct QueryDetails {
         owner: String,
         repo: String,
     }
 
-    pub async fn query_issues(repo_url: String, fetch_count: u32) -> octocrab::Result<()> {
+    pub async fn query_issues(repo_url: String, fetch_count: u32) -> octocrab::Result<(), Box<dyn std::error::Error>> {
         let query = parse_github_url(repo_url);
 
         let client: Octocrab = get_client();
+
+        let test_url = Url::parse("https://api.github.com/repos/apache/struts/contributors")?;
+
+        let test = client.list_contributors(test_url).await?;
 
         println!("{}", "Running Issues search\n".bright_red().bold());
 
