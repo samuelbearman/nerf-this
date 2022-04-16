@@ -55,12 +55,14 @@ pub mod global {
 
 pub mod issues {
 
-    use crate::extensions::octocrab::{OrganisationExt, UsersExt};
+    const REPO_API_URL: &str = "https://api.github.com/repos";
+    const _REPO_API_EVENTS: &str = "https://api.github.com/events";
+
+    use crate::extensions::octocrab::UsersExt;
     use crate::output::issues::print_issues;
     use crate::query::util::get_client;
     use crate::query::DEFAULT_KEY_WORDS;
     use colored::Colorize;
-    use indicatif::ProgressBar;
     use octocrab::models::issues::Issue;
     use octocrab::{models, params, Octocrab};
     use url::Url;
@@ -69,19 +71,39 @@ pub mod issues {
         owner: String,
         repo: String,
     }
-
-    pub async fn query_issues(repo_url: String, fetch_count: u32) -> octocrab::Result<(), Box<dyn std::error::Error>> {
+    pub async fn query_contributors(
+        repo_url: String,
+    ) -> octocrab::Result<(), Box<dyn std::error::Error>> {
         let query = parse_github_url(repo_url);
 
         let client: Octocrab = get_client();
 
-        let test_url = Url::parse("https://api.github.com/repos/apache/struts/contributors")?;
+        let formated_url = format!(
+            "{}/{}/{}/contributors",
+            REPO_API_URL, query.owner, query.repo
+        );
 
-        let test = client.list_contributors(test_url).await?;
+        let test_url = Url::parse(&formated_url)?;
+
+        let contributors = client.list_contributors(test_url).await?;
+
+        for contributor in contributors {
+            println!("{} - {}", contributor.login, contributor.html_url)
+        }
+
+        Ok(())
+    }
+
+    pub async fn query_issues(
+        repo_url: String,
+        fetch_count: u32,
+    ) -> octocrab::Result<(), Box<dyn std::error::Error>> {
+        let query = parse_github_url(repo_url);
+
+        let client: Octocrab = get_client();
 
         println!("{}", "Running Issues search\n".bright_red().bold());
 
-        let bar = ProgressBar::new(fetch_count.into());
         let mut page = client
             .issues(query.owner, query.repo)
             .list()
@@ -99,13 +121,13 @@ pub mod issues {
             }
 
             current_count = current_count + 1;
-            bar.inc(1);
+
             page = match client.get_page::<models::issues::Issue>(&page.next).await? {
                 Some(next_page) => next_page,
                 None => break,
             };
         }
-        bar.finish();
+
         print_issues(matched.into_iter());
         Ok(())
     }

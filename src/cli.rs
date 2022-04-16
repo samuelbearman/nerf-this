@@ -13,5 +13,6 @@ pub struct Args {
 #[derive(clap::Subcommand, Debug)]
 pub enum Action {
     Issues { url: String },
+    Contributors { url: String },
     GlobalSearch,
 }
