@@ -48,7 +48,7 @@ pub mod global {
             .send()
             .await?;
 
-        print_repository(pages.into_iter());
+        print_repository(&pages.items);
         Ok(())
     }
 }
@@ -90,7 +90,7 @@ pub mod issues {
 
         let contributors = client.list_contributors(url).await?;
 
-        print_contibutors(contributors.into_iter());
+        print_contibutors(&contributors.items);
 
         Ok(())
     }
@@ -133,7 +133,7 @@ pub mod issues {
             };
         }
 
-        print_issues(matched.into_iter());
+        print_issues(&matched);
         Ok(())
     }
 
