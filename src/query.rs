@@ -59,7 +59,7 @@ pub mod issues {
     const _REPO_API_EVENTS: &str = "https://api.github.com/events";
 
     use crate::extensions::octocrab::UsersExt;
-    use crate::output::issues::print_issues;
+    use crate::output::issues::{print_issues, print_contibutors};
     use crate::query::util::get_client;
     use crate::query::DEFAULT_KEY_WORDS;
     use colored::Colorize;
@@ -71,6 +71,7 @@ pub mod issues {
         owner: String,
         repo: String,
     }
+    
     pub async fn query_contributors(
         repo_url: String,
     ) -> octocrab::Result<(), Box<dyn std::error::Error>> {
@@ -87,9 +88,7 @@ pub mod issues {
 
         let contributors = client.list_contributors(test_url).await?;
 
-        for contributor in contributors {
-            println!("{} - {}", contributor.login, contributor.html_url)
-        }
+        print_contibutors(contributors.into_iter());
 
         Ok(())
     }

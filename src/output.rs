@@ -2,6 +2,7 @@ pub mod issues {
     use comfy_table::modifiers::UTF8_ROUND_CORNERS;
     use comfy_table::presets::UTF8_FULL;
     use comfy_table::*;
+    use octocrab::models::User;
     use octocrab::models::issues::Issue;
     use std::vec::IntoIter;
 
@@ -28,6 +29,24 @@ pub mod issues {
                         Some(date) => Cell::new(date.naive_local()).fg(Color::Red),
                         None => Cell::new("N/A").fg(Color::Yellow),
                     },
+                ]);
+        }
+
+        println!("{table}");
+    }
+
+    pub fn print_contibutors(results: IntoIter<User>) {
+        let mut table = Table::new();
+
+        for matched_issue in results {
+            table
+                .load_preset(UTF8_FULL)
+                .apply_modifier(UTF8_ROUND_CORNERS)
+                .set_content_arrangement(ContentArrangement::Dynamic)
+                .set_header(vec!["Username", "Profile Link"])
+                .add_row(vec![
+                    Cell::new(matched_issue.login).fg(Color::Red),
+                    Cell::new(matched_issue.html_url.as_str()).fg(Color::Red),
                 ]);
         }
 
