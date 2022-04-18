@@ -59,7 +59,7 @@ pub mod issues {
     const _REPO_API_EVENTS: &str = "https://api.github.com/events";
 
     use crate::extensions::octocrab::UsersExt;
-    use crate::output::issues::{print_issues, print_contibutors};
+    use crate::output::issues::{print_contibutors, print_issues};
     use crate::query::util::get_client;
     use crate::query::DEFAULT_KEY_WORDS;
     use colored::Colorize;
@@ -71,7 +71,7 @@ pub mod issues {
         owner: String,
         repo: String,
     }
-    
+
     pub async fn query_contributors(
         repo_url: String,
     ) -> octocrab::Result<(), Box<dyn std::error::Error>> {
@@ -84,9 +84,11 @@ pub mod issues {
             REPO_API_URL, query.owner, query.repo
         );
 
-        let test_url = Url::parse(&formated_url)?;
+        let url = Url::parse(&formated_url)?;
 
-        let contributors = client.list_contributors(test_url).await?;
+        println!("{}", "Running Contributor Search\n".bright_red().bold());
+
+        let contributors = client.list_contributors(url).await?;
 
         print_contibutors(contributors.into_iter());
 
@@ -96,12 +98,13 @@ pub mod issues {
     pub async fn query_issues(
         repo_url: String,
         fetch_count: u32,
+        search_terms: String,
     ) -> octocrab::Result<(), Box<dyn std::error::Error>> {
         let query = parse_github_url(repo_url);
 
         let client: Octocrab = get_client();
 
-        println!("{}", "Running Issues search\n".bright_red().bold());
+        println!("{}", "Running Issues Search\n".bright_red().bold());
 
         let mut page = client
             .issues(query.owner, query.repo)
@@ -112,9 +115,12 @@ pub mod issues {
             .await?;
         let mut matched = Vec::new();
         let mut current_count = 1;
+
+        let parsed_search_terms = search_terms.split(",").collect::<Vec<_>>();
+
         while current_count <= fetch_count {
             for issue in &page {
-                if search_for_terms(issue) {
+                if search_for_terms(issue, parsed_search_terms.as_slice()) {
                     matched.push(issue.clone());
                 }
             }
@@ -131,18 +137,32 @@ pub mod issues {
         Ok(())
     }
 
-    fn search_for_terms(issue: &Issue) -> bool {
-        for word in DEFAULT_KEY_WORDS {
-            if issue.title.to_lowercase().contains(word) {
-                return true;
-            }
+    fn search_for_terms(issue: &Issue, search_terms: &[&str]) -> bool {
+        if search_terms.len() > 0 {
+            for word in search_terms {
+                if issue.title.to_lowercase().contains(word) {
+                    return true;
+                }
 
-            match &issue.body {
-                Some(text) => text.contains(word),
-                None => continue,
-            };
+                match &issue.body {
+                    Some(text) => text.contains(word),
+                    None => continue,
+                };
+            }
+            false
+        } else {
+            for word in DEFAULT_KEY_WORDS {
+                if issue.title.to_lowercase().contains(word) {
+                    return true;
+                }
+
+                match &issue.body {
+                    Some(text) => text.contains(word),
+                    None => continue,
+                };
+            }
+            false
         }
-        false
     }
 
     fn parse_github_url(url: String) -> QueryDetails {

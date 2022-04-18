@@ -2,6 +2,7 @@ use clap::Parser;
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
+#[clap(propagate_version = true)]
 pub struct Args {
     #[clap(subcommand)]
     pub action: Action,
@@ -13,9 +14,18 @@ pub struct Args {
 #[derive(clap::Subcommand, Debug)]
 pub enum Action {
     /// Search issues of repo, match to security related terms
-    Issues { url: String },
+    Issues {
+        /// Github URL (Ex. https://github.com/apache/struts)
+        url: String,
+        /// Custom search terms for searching issues (Ex. "security,vuln,bad")
+        #[clap(short, long, default_value_t = String::from(""))]
+        search_terms: String,
+    },
     /// Get list of all contributors in repo
-    Contributors { url: String },
+    Contributors {
+        /// Github URL (Ex. https://github.com/apache/struts)
+        url: String,
+    },
     /// Search all repositories on github
     GlobalSearch,
 }
