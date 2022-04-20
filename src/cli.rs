@@ -6,9 +6,7 @@ use clap::Parser;
 pub struct Args {
     #[clap(subcommand)]
     pub action: Action,
-    /// Max number of github api fetches
-    #[clap(short, long, default_value_t = 10)]
-    pub fetch_count: u32,
+    
 }
 
 #[derive(clap::Subcommand, Debug)]
@@ -20,6 +18,9 @@ pub enum Action {
         /// Custom search terms for searching issues (Ex. "security,vuln,bad")
         #[clap(short, long, default_value_t = String::from(""))]
         search_terms: String,
+        /// Max number of github api fetches
+        #[clap(short, long, default_value_t = 10)]
+        fetch_count: u32,
     },
     /// Get list of all contributors in repo
     Contributors {
