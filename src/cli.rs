@@ -6,7 +6,6 @@ use clap::Parser;
 pub struct Args {
     #[clap(subcommand)]
     pub action: Action,
-    
 }
 
 #[derive(clap::Subcommand, Debug)]
@@ -27,6 +26,4 @@ pub enum Action {
         /// Github URL (Ex. https://github.com/apache/struts)
         url: String,
     },
-    /// Search all repositories on github
-    GlobalSearch,
 }

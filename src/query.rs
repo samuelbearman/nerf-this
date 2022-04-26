@@ -32,27 +32,6 @@ mod util {
     }
 }
 
-pub mod global {
-    use crate::output::global::print_repository;
-    use crate::query::util::get_client;
-    use octocrab::models::Repository;
-    use octocrab::{Octocrab, Page};
-
-    pub async fn search() -> octocrab::Result<()> {
-        let client: Octocrab = get_client();
-
-        let pages: Page<Repository> = client
-            .search()
-            .repositories("poc")
-            .sort("updated")
-            .send()
-            .await?;
-
-        print_repository(&pages.items);
-        Ok(())
-    }
-}
-
 pub mod issues {
 
     const REPO_API_URL: &str = "https://api.github.com/repos";
