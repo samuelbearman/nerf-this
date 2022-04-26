@@ -19,6 +19,11 @@ mod util {
     use octocrab::Octocrab;
     use std::env;
 
+    pub struct QueryDetails {
+        pub owner: String,
+        pub repo: String,
+    }
+
     pub fn get_client() -> Octocrab {
         let github_token = match env::var_os("GITHUB") {
             Some(v) => v.into_string().unwrap(),
@@ -30,6 +35,43 @@ mod util {
             .build()
             .unwrap()
     }
+
+    pub fn parse_github_url(url: String) -> QueryDetails {
+        let split_strings: Vec<&str> = url.split("/").collect();
+        QueryDetails {
+            owner: String::from(split_strings[3]),
+            repo: String::from(split_strings[4]),
+        }
+    }
+}
+
+pub mod code {
+    use crate::{
+        output::code::print_code_search_content,
+        query::util::{get_client, parse_github_url},
+    };
+    use octocrab::Octocrab;
+
+    pub async fn query_code(
+        repo_url: String,
+        search_string: String,
+        lang: String,
+    ) -> octocrab::Result<(), Box<dyn std::error::Error>> {
+        let query = parse_github_url(repo_url);
+
+        let client: Octocrab = get_client();
+
+        let query_string = format!(
+            "\"{}\" repo:{}/{} language:{}",
+            search_string, query.owner, query.repo, lang
+        );
+
+        let code_content = client.search().code(&query_string).send().await?;
+
+        print_code_search_content(&code_content.items);
+
+        Ok(())
+    }
 }
 
 pub mod issues {
@@ -39,17 +81,12 @@ pub mod issues {
 
     use crate::extensions::octocrab::UsersExt;
     use crate::output::issues::{print_contibutors, print_issues};
-    use crate::query::util::get_client;
+    use crate::query::util::{get_client, parse_github_url};
     use crate::query::DEFAULT_KEY_WORDS;
     use colored::Colorize;
     use octocrab::models::issues::Issue;
     use octocrab::{models, params, Octocrab};
     use url::Url;
-
-    struct QueryDetails {
-        owner: String,
-        repo: String,
-    }
 
     pub async fn query_contributors(
         repo_url: String,
@@ -141,14 +178,6 @@ pub mod issues {
                 };
             }
             false
-        }
-    }
-
-    fn parse_github_url(url: String) -> QueryDetails {
-        let split_strings: Vec<&str> = url.split("/").collect();
-        QueryDetails {
-            owner: String::from(split_strings[3]),
-            repo: String::from(split_strings[4]),
         }
     }
 }

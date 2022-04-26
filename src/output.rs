@@ -60,3 +60,34 @@ pub mod issues {
         }
     }
 }
+
+pub mod code {
+    use comfy_table::modifiers::UTF8_ROUND_CORNERS;
+    use comfy_table::presets::UTF8_FULL;
+    use comfy_table::*;
+    use octocrab::models::Code;
+
+
+    pub fn print_code_search_content(results: &Vec<Code>) {
+        if results.len() > 0 {
+            let mut table = Table::new();
+
+            for matched_issue in results {
+                table
+                    .load_preset(UTF8_FULL)
+                    .apply_modifier(UTF8_ROUND_CORNERS)
+                    .set_content_arrangement(ContentArrangement::Dynamic)
+                    .set_header(vec!["File", "Path", "URL"])
+                    .add_row(vec![
+                        Cell::new(&matched_issue.name).fg(Color::Red),
+                        Cell::new(&matched_issue.path).fg(Color::Red),
+                        Cell::new(&matched_issue.git_url.as_str()).fg(Color::Red),
+                    ]);
+            }
+
+            println!("{table}");
+        } else {
+            println!("No Results");
+        }
+    }
+}
